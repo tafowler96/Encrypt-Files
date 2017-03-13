@@ -1,12 +1,17 @@
 package com.example.tom.encrypt_files;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        final Context context = this;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -63,56 +70,102 @@ public class MainActivity extends AppCompatActivity {
         ListView filesView = (ListView) findViewById(file_list);
         filesView.setAdapter(adapter);
 
-        byte[] K;
-        try {
-            K = hashPassword("a");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-
         filesView.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String item = ((TextView)view).getText().toString();
-                byte[] K = new byte[0];
-                try {
-                    K = hashPassword("a");
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                }
-                File inputFile, outputFile;
-                String path = dirPath + "/" + item;
-                if (item.endsWith(".enc")) {
-                    inputFile = new File(path);
-                    outputFile = new File(path.split(".enc")[0]);
-                    try {
-                        cryptFile(Cipher.DECRYPT_MODE, K, inputFile, outputFile);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                else {
-                    inputFile = new File(path);
-                    outputFile = new File(path + ".enc");
-                    try {
-                        cryptFile(Cipher.ENCRYPT_MODE, K, inputFile, outputFile);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+                final String item = ((TextView)view).getText().toString();
+                // get prompts.xml view
+                LayoutInflater li = LayoutInflater.from(context);
+                View promptsView = li.inflate(R.layout.password_prompt, null);
 
-                finish();
-                startActivity(getIntent());
+                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                        context);
+
+                // set prompts.xml to alertdialog builder
+                alertDialogBuilder.setView(promptsView);
+
+                final EditText userInput = (EditText) promptsView
+                        .findViewById(R.id.editTextDialogUserInput);
+                // set dialog message
+                alertDialogBuilder
+                        .setCancelable(false)
+                        .setPositiveButton("OK",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,int id) {
+                                        String password = userInput.getText().toString();
+                                        byte[] K = null;
+                                        try {
+                                            K = hashPassword(password);
+                                        } catch (NoSuchAlgorithmException e) {
+                                            e.printStackTrace();
+                                        }
+                                        File inputFile, outputFile;
+                                        String path = dirPath + "/" + item;
+                                        if (item.endsWith(".enc")) {
+                                            inputFile = new File(path);
+                                            outputFile = new File(path.split(".enc")[0]);
+                                            try {
+                                                cryptFile(Cipher.DECRYPT_MODE, K, inputFile, outputFile);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                        else {
+                                            inputFile = new File(path);
+                                            outputFile = new File(path + ".enc");
+                                            try {
+                                                cryptFile(Cipher.ENCRYPT_MODE, K, inputFile, outputFile);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                        finish();
+                                        startActivity(getIntent());
+                                    }
+                                })
+                        .setNegativeButton("Cancel",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,int id) {
+                                        dialog.cancel();
+                                    }
+                                });
+
+                // create alert dialog
+                AlertDialog alertDialog = alertDialogBuilder.create();
+
+                // show it
+                alertDialog.show();
+//                byte[] K = null;
+//                try {
+//                    K = hashPassword("a");
+//                } catch (NoSuchAlgorithmException e) {
+//                    e.printStackTrace();
+//                }
+//                File inputFile, outputFile;
+//                String path = dirPath + "/" + item;
+//                if (item.endsWith(".enc")) {
+//                    inputFile = new File(path);
+//                    outputFile = new File(path.split(".enc")[0]);
+//                    try {
+//                        cryptFile(Cipher.DECRYPT_MODE, K, inputFile, outputFile);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                else {
+//                    inputFile = new File(path);
+//                    outputFile = new File(path + ".enc");
+//                    try {
+//                        cryptFile(Cipher.ENCRYPT_MODE, K, inputFile, outputFile);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+
+//                finish();
+//                startActivity(getIntent());
             }
         });
-
-//        File inputFile = new File(dirPath + "/A.enc");
-//        File outputFile = new File(dirPath + "/A.pdf");
-//        try {
-//            cryptFile(Cipher.DECRYPT_MODE, K, inputFile, outputFile);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
     private String bytesToHex(byte[] bytes) {
